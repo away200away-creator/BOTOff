@@ -1,0 +1,11 @@
+.env
+coin.env
+*.cbm
+data_cache/
+catboost_info/
+__pycache__/
+*.pyc
+.venv/
+venv/
+7-Zip/
+_trash_7zip_delete_me/

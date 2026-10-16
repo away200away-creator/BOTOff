@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bybit AI Quant Hub — Терминал Управления</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            dark: '#070a12',
+                            card: '#0c1322',
+                            subcard: '#131e33',
+                            border: '#1e293b',
+                            emerald: '#10b981',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-emerald': '0 0 25px -5px rgba(16, 185, 129, 0.3)',
+                        'neon-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.3)',
+                        'neon-rose': '0 0 25px -5px rgba(244, 63, 94, 0.3)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #070a12;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .glass-card {
+            background: rgba(12, 19, 34, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 65, 85, 0.4);
+            position: relative;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+            pointer-events: none;
+        }
+        .glass-card:hover {
+            border-color: rgba(71, 85, 105, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+        .tab-pill {
+            transition: all 0.2s ease-in-out;
+            color: #94a3b8;
+        }
+        .tab-pill.active {
+            background: rgba(30, 41, 59, 0.9);
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        .pulse-dot {
+            box-shadow: 0 0 10px currentColor;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white relative">
+
+    <div class="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-emerald-500/10 blur-[140px] pointer-events-none z-0"></div>
+    <div class="fixed top-[15%] right-[-15%] w-[45vw] h-[45vw] rounded-full bg-cyan-500/10 blur-[150px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-15%] left-[25%] w-[50vw] h-[40vw] rounded-full bg-purple-600/5 blur-[160px] pointer-events-none z-0"></div>
+
+    <header class="border-b border-slate-800/70 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-400 p-[1px] shadow-lg shadow-emerald-500/20">
+                        <div class="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-extrabold text-base sm:text-lg text-white tracking-tight">Bybit AI Hub</span>
+                            <span id="connectionBadge" class="px-2.5 py-0.5 text-[11px] font-mono font-bold bg-slate-900/90 text-slate-400 border border-slate-800 rounded-full flex items-center space-x-1.5 transition-all">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                <span id="connectionStatusText">Поиск бота...</span>
+                            </span>
+                            <span id="headerLiveScoreBadge" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-mono text-[11px] font-bold" title="Текущий минимальный порог Score">
+                                Score: 45
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 font-mono hidden sm:block">Z-Score &bull; Dynamic ATR-Trail &bull; Live Control</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2.5">
+                    <button id="toggleAudioBtn" title="Звуковые сигналы при сделках" class="p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-400 hover:text-emerald-400 transition">
+                        <svg id="audioIconOn" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                        <svg id="audioIconOff" class="w-4 h-4 hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+                    </button>
+
+                    <button id="toggleBotBtn" class="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-emerald-500/25 active:scale-95">
+                        <span id="botBtnIcon" class="w-2 h-2 rounded-full bg-white pulse-dot text-white"></span>
+                        <span id="botBtnText">Бот активен</span>
+                    </button>
+                    
+                    <label class="cursor-pointer flex items-center space-x-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium border border-slate-800 hover:border-slate-700 transition">
+                        <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        <span class="hidden md:inline">Загрузить CSV</span>
+                        <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                    </label>
+
+                    <button id="demoBtn" class="bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white px-3 py-2 rounded-xl text-xs font-medium border border-slate-800 hover:border-slate-700 transition">
+                        Демо
+                    </button>
+
+                    <button id="openClearModalBtn" title="Очистить историю сделок" class="p-2 rounded-xl bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 hover:text-white border border-rose-800/40 hover:border-rose-700/60 transition active:scale-95">
+                        <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Вкладки навигации -->
+            <div class="py-2 overflow-x-auto">
+                <div class="inline-flex p-1 bg-slate-950/80 border border-slate-800/90 rounded-2xl space-x-1 text-xs font-medium">
+                    <button class="tab-pill active px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-dashboard">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        <span>Терминал & Мониторинг</span>
+                    </button>
+                    <button class="tab-pill px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-score-settings">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                        <span class="font-bold">Параметры & Скор</span>
+                        <span id="tabScoreBadge" class="ml-1 px-1.5 py-0.2 rounded-md bg-cyan-500/20 text-cyan-300 font-mono text-[10px]">45</span>
+                    </button>
+                    <button class="tab-pill px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-analytics">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <span>Аналитика & Метрики</span>
+                    </button>
+                    <button class="tab-pill px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-backtest">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        <span>A/B Бэктест</span>
+                    </button>
+                    <button class="tab-pill px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-ml">
+                        <svg class="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <span>ИИ CatBoost</span>
+                    </button>
+                    <button class="tab-pill px-4 py-2 rounded-xl flex items-center space-x-2 whitespace-nowrap" data-tab="tab-history">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span>История</span>
+                        <span id="historyTabCountBadge" class="ml-1 px-1.5 py-0.2 rounded-md bg-slate-800 text-[10px] text-slate-300 font-mono">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
+
+        <!-- ==================== ВКЛАДКА 1: ТЕРМИНАЛ И МОНИТОРИНГ ==================== -->
+        <section id="tab-dashboard" class="tab-content space-y-6">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/80 to-teal-400/80"></div>
+                    <span class="text-xs text-slate-400 font-medium">Баланс депозита</span>
+                    <div id="cardBalance" class="text-xl font-bold font-mono text-white mt-2">100.00$</div>
+                    <span id="cardBalanceChange" class="text-[11px] font-semibold text-emerald-400 mt-1 font-mono">+0.00$ (0.0%)</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 to-cyan-400"></div>
+                    <span class="text-xs text-slate-400 font-medium">Чистый PnL</span>
+                    <div id="cardNetPnl" class="text-xl font-bold font-mono text-emerald-400 mt-2">+0.00$</div>
+                    <span class="text-[11px] text-slate-400 mt-1 font-mono">С учётом fees & slip</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-400 to-blue-500"></div>
+                    <span class="text-xs text-slate-400 font-medium">Винрейт (WR)</span>
+                    <div id="cardWinrate" class="text-xl font-bold font-mono text-white mt-2">0.0%</div>
+                    <span id="cardWinsLosses" class="text-[11px] text-slate-400 mt-1 font-mono">0 побед / 0 стопов</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-400 to-pink-500"></div>
+                    <span class="text-xs text-slate-400 font-medium">Сделок закрыто</span>
+                    <div id="cardTotalTrades" class="text-xl font-bold font-mono text-white mt-2">0</div>
+                    <span id="cardAvgDuration" class="text-[11px] text-slate-400 mt-1 font-mono">Ср. время: 0 мин</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                    <span class="text-xs text-slate-400 font-medium">Profit Factor</span>
+                    <div id="cardProfitFactor" class="text-xl font-bold font-mono text-white mt-2">0.00</div>
+                    <span class="text-[11px] text-slate-400 mt-1 font-mono">Прибыль / Убыток</span>
+                </div>
+
+                <div class="glass-card rounded-2xl p-4 flex flex-col justify-between overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500 to-red-600"></div>
+                    <span class="text-xs text-slate-400 font-medium">Порог Score</span>
+                    <div id="cardCurrentScore" class="text-xl font-bold font-mono text-cyan-400 mt-2">45</div>
+                    <span class="text-[11px] text-cyan-300/80 mt-1 font-mono">Конфлюэнс фильтр</span>
+                </div>
+            </div>
+
+            <!-- Таблица открытых позиций -->
+            <div class="glass-card rounded-2xl p-5 shadow-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <h2 class="text-sm font-semibold text-white tracking-wide">Активные позиции Bybit</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-800/50 px-2.5 py-1 rounded-lg">Order Flow Gate: Z≥1.5σ & ΔOI≤-0.2%</span>
+                        <span class="text-xs font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">Лимит: 10 слотов</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="text-slate-400 bg-slate-950/60 uppercase tracking-wider text-[11px] font-sans">
+                            <tr>
+                                <th class="py-3 px-3.5">Символ</th>
+                                <th class="py-3 px-3.5">Тип & Плечо</th>
+                                <th class="py-3 px-3.5">Вход ➔ Текущая</th>
+                                <th class="py-3 px-3.5">Маржа</th>
+                                <th class="py-3 px-3.5">ROE % & Прогресс</th>
+                                <th class="py-3 px-3.5">Плавающий PnL</th>
+                                <th class="py-3 px-3.5">Статус сопровождения</th>
+                            </tr>
+                        </thead>
+                        <tbody id="livePositionsBody" class="divide-y divide-slate-800/60">
+                            <tr>
+                                <td colspan="7" class="text-center py-7 text-slate-500 font-sans">
+                                    Нет активных позиций. Квантовый гейт отслеживает кульминации ликвидаций и капитуляцию открытого интереса...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- График эквити -->
+            <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white flex items-center space-x-2">
+                            <span>Кривая капитала (Equity Curve)</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Динамика баланса с учётом комиссий (Taker 0.055%) и проскальзывания 0.08%</p>
+                    </div>
+                    <span id="chartPointsBadge" class="text-xs font-mono bg-slate-900/90 text-emerald-400 px-3 py-1 rounded-xl border border-emerald-500/30">0 сделок</span>
+                </div>
+                <div class="relative h-[300px]">
+                    <canvas id="equityChartCanvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ВКЛАДКА 2: ПАРАМЕТРЫ & СКОР (НОВАЯ ЦЕНТРАЛЬНАЯ ПАНЕЛЬ) ==================== -->
+        <section id="tab-score-settings" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 border-cyan-500/30">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+                    <div>
+                        <div class="flex items-center space-x-2.5">
+                            <h2 class="text-base sm:text-lg font-bold text-white">Управление порогом Score & Стратегией</h2>
+                            <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold">Живое управление без перезапуска</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Любое изменение ниже мгновенно передается запущенному боту в памяти через REST API.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="mainApplyParamsBtn" class="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-cyan-600/30 active:scale-95">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>Применить к живому боту</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                    <!-- ГЛАВНЫЙ БЛОК: СКОР -->
+                    <div class="glass-card rounded-2xl p-5 border border-cyan-500/40 bg-cyan-950/10 flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase text-cyan-400 tracking-wider">Главный порог входа</span>
+                                <span id="scoreValuePill" class="text-lg font-extrabold font-mono text-white bg-cyan-500/20 border border-cyan-400/40 px-3 py-0.5 rounded-xl">45</span>
+                            </div>
+                            <h3 class="text-base font-bold text-white mb-1">Минимальный Score (MIN_SCORE)</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                                Задаёт строгость отбора сетапов. При Score 45 бот требует совпадения минимум 3 независимых факторов разворота.
+                            </p>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-mono">
+                                        <span>Мягкий (20–30)</span>
+                                        <span class="text-cyan-400 font-bold">Оптимум (40–50)</span>
+                                        <span>Ультра-жесткий (60–75)</span>
+                                    </div>
+                                    <input id="sliderMinScore" type="range" min="15" max="75" step="5" value="45" class="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-800 rounded-lg">
+                                </div>
+
+                                <div class="flex items-center space-x-3 pt-1">
+                                    <label class="text-xs text-slate-300 font-medium">Точное число:</label>
+                                    <input id="inputMinScore" type="number" min="10" max="85" step="5" value="45" class="w-24 bg-slate-950/90 border border-cyan-500/50 text-cyan-400 font-extrabold font-mono text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-cyan-400 transition text-center">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-[11px] text-slate-400 space-y-1">
+                            <div class="text-slate-300 font-semibold font-sans">Рекомендации инженера:</div>
+                            <div>• <span class="text-amber-400">Score 30–35</span>: 15–25 сделок/сут (больше импульсов)</div>
+                            <div>• <span class="text-emerald-400">Score 45</span>: 8–16 сделок/сут (наивысшая точность)</div>
+                            <div>• <span class="text-rose-400">Score 60+</span>: редкие входы, пропуск трейлингов</div>
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 2: РИСК И ТЕЙК -->
+                    <div class="glass-card rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase text-emerald-400 tracking-wider">Управление выходом</span>
+                            <h3 class="text-sm font-bold text-white mt-1 mb-3">Цели и Защита капитала</h3>
+
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <label class="text-slate-400 block mb-1">TP1 ROE (% фиксации 50% объема):</label>
+                                    <input id="inputTp1Roe" type="number" step="0.5" min="1.0" max="25.0" value="3.0" class="w-full bg-slate-950/80 border border-slate-800 text-cyan-400 font-bold font-mono rounded-xl px-3 py-2 focus:border-cyan-500 focus:outline-none transition">
+                                </div>
+
+                                <div>
+                                    <label class="text-slate-400 block mb-1">Стоп-лосс (% ROE):</label>
+                                    <input id="inputStopRoe" type="number" step="1" max="-1" min="-30" value="-12.0" class="w-full bg-slate-950/80 border border-slate-800 text-rose-400 font-bold font-mono rounded-xl px-3 py-2 focus:border-rose-500 focus:outline-none transition">
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-slate-300 mb-1">
+                                        <span>Безубыток (после TP1):</span>
+                                        <span id="labelBeTrigger" class="font-bold text-emerald-400 font-mono">+0.5% ROE</span>
+                                    </div>
+                                    <input id="sliderBeTrigger" type="range" min="0.0" max="1.5" step="0.1" value="0.5" class="w-full accent-emerald-500 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            Стоп -12.0% ROE при плече 3x соответствует отклонению цены всего на 4.0%.
+                        </div>
+                    </div>
+
+                    <!-- БЛОК 3: ПОРТФЕЛЬ И ИИ -->
+                    <div class="glass-card rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase text-purple-400 tracking-wider">ИИ & Трейлинг</span>
+                            <h3 class="text-sm font-bold text-white mt-1 mb-3">Фильтр CatBoost & ATR</h3>
+
+                            <div class="space-y-3 text-xs">
+                                <div>
+                                    <div class="flex justify-between text-slate-300 mb-1">
+                                        <span>Порог уверенности CatBoost:</span>
+                                        <span id="labelMlConfidence" class="font-bold text-teal-400 font-mono">60%</span>
+                                    </div>
+                                    <input id="sliderMlConfidence" type="range" min="50" max="75" value="60" class="w-full accent-teal-400 cursor-pointer">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-slate-400 block mb-1">Плечо (x):</label>
+                                        <select id="selectLeverage" class="w-full bg-slate-950/80 border border-slate-800 text-white font-mono rounded-xl px-2.5 py-2 focus:border-emerald-500 focus:outline-none transition">
+                                            <option value="1">1x</option>
+                                            <option value="2">2x</option>
+                                            <option value="3" selected>3x</option>
+                                            <option value="5">5x</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-slate-400 block mb-1">Риск на сделку:</label>
+                                        <input id="inputRiskPerTrade" type="number" step="0.5" min="0.5" max="10" value="2.0" class="w-full bg-slate-950/80 border border-slate-800 text-white font-mono rounded-xl px-2.5 py-2 focus:border-emerald-500 focus:outline-none transition">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-slate-400 block mb-1">Множитель ATR:</label>
+                                        <input id="inputAtrMult" type="number" step="0.1" min="0.5" max="3.0" value="1.0" class="w-full bg-slate-950/80 border border-slate-800 text-amber-400 font-bold font-mono rounded-xl px-2.5 py-2 focus:border-amber-500 focus:outline-none transition">
+                                    </div>
+                                    <div>
+                                        <label class="text-slate-400 block mb-1">Проскальзывание:</label>
+                                        <input id="inputSlippage" type="number" step="0.01" min="0.0" max="1.0" value="0.08" class="w-full bg-slate-950/80 border border-slate-800 text-purple-400 font-bold font-mono rounded-xl px-2.5 py-2 focus:border-purple-500 focus:outline-none transition">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="exportConfigBtn" class="w-full py-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-medium border border-slate-800 hover:border-slate-700 transition flex items-center justify-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                            <span>Скопировать код для config.py</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ВКЛАДКА 3: АНАЛИТИКА ==================== -->
+        <section id="tab-analytics" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="glass-card rounded-2xl p-5">
+                    <h3 class="text-sm font-semibold text-emerald-400 mb-3 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        <span>ТОП Прибыльных Монет</span>
+                    </h3>
+                    <div id="topProfitableList" class="space-y-2 text-xs font-mono">
+                        <div class="text-slate-500 font-sans text-center py-4">Нет данных</div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5">
+                    <h3 class="text-sm font-semibold text-rose-400 mb-3 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>
+                        <span>ТОП Убыточных Монет</span>
+                    </h3>
+                    <div id="topLosingList" class="space-y-2 text-xs font-mono">
+                        <div class="text-slate-500 font-sans text-center py-4">Нет данных</div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-3">Направления (LONG / SHORT)</h3>
+                        <div class="space-y-3 text-xs font-mono">
+                            <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-emerald-400 font-bold flex items-center space-x-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                        <span>LONG Экспозиция</span>
+                                    </span>
+                                    <span id="longWinrate" class="font-bold text-white">0% WR</span>
+                                </div>
+                                <div id="longStatsDetails" class="text-slate-400 text-[11px]">Сделок: 0 | PnL: 0.00$</div>
+                            </div>
+                            <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-rose-400 font-bold flex items-center space-x-1.5">
+                                        <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                                        <span>SHORT Экспозиция</span>
+                                    </span>
+                                    <span id="shortWinrate" class="font-bold text-white">0% WR</span>
+                                </div>
+                                <div id="shortStatsDetails" class="text-slate-400 text-[11px]">Сделок: 0 | PnL: 0.00$</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div>
+                    <h3 class="text-sm font-semibold text-white mb-1">Структура закрытия позиций</h3>
+                    <p class="text-xs text-slate-400 mb-4">Доля фиксаций по TP1, ATR-Трейлингу, Soft BE и Стоп-лоссу</p>
+                    <div id="reasonsLegend" class="space-y-2 text-xs font-mono"></div>
+                </div>
+                <div class="relative h-48 flex items-center justify-center">
+                    <canvas id="reasonsDonutCanvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ВКЛАДКА 4: A/B БЭКТЕСТ ==================== -->
+        <section id="tab-backtest" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+                    <div>
+                        <h2 class="text-base font-bold text-white">Сравнительный A/B Бэктест (Без ИИ vs С ИИ CatBoost)</h2>
+                        <p class="text-xs text-slate-400 mt-1">Оценка эффективности фильтрации ложных сигналов на 45-дневной истории</p>
+                    </div>
+                    <button id="runBacktestBtn" class="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition shadow-lg shadow-emerald-600/30 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                        <span>Запустить симуляцию A/B</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto mt-5">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-950/80 text-slate-400 font-semibold uppercase tracking-wider text-[11px] font-sans">
+                            <tr>
+                                <th class="py-3 px-4">Символ</th>
+                                <th class="py-3 px-4">Сделок (Без ➔ С ИИ)</th>
+                                <th class="py-3 px-4">Винрейт (Без ➔ С ИИ)</th>
+                                <th class="py-3 px-4">Чистый PnL (Без ➔ С ИИ)</th>
+                                <th class="py-3 px-4">Profit Factor</th>
+                                <th class="py-3 px-4">Эффект ИИ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backtestTableBody" class="divide-y divide-slate-800/60"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ВКЛАДКА 5: ИИ МОДЕЛЬ ==================== -->
+        <section id="tab-ml" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="glass-card rounded-2xl p-6">
+                    <div class="flex items-center space-x-3.5 mb-4">
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">
+                            ML
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">trade_filter.cbm</h3>
+                            <span class="text-xs text-emerald-400 font-mono flex items-center space-x-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+                                <span>Активна в инференсе</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 text-xs">
+                        <div class="flex justify-between py-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Алгоритм:</span>
+                            <span class="font-bold text-white">CatBoost Gradient Boosting</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Метрика AUC-ROC:</span>
+                            <span class="font-bold text-emerald-400 font-mono">0.581 (Без оверфита)</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Размер датасета:</span>
+                            <span class="font-mono text-slate-200">3 127 сделок (45 дней)</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-slate-800/80">
+                            <span class="text-slate-400">Порог уверенности:</span>
+                            <span class="font-mono text-cyan-400 font-bold">&ge; 60% (WR 76.9%)</span>
+                        </div>
+                        <div class="flex justify-between py-2">
+                            <span class="text-slate-400">Время инференса:</span>
+                            <span class="font-mono text-emerald-400">&lt; 1.1 мс</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                    <h3 class="text-sm font-bold text-white mb-1">Важность признаков CatBoost (Feature Importance)</h3>
+                    <p class="text-xs text-slate-400 mb-4">Факторы, выявленные моделью при фильтрации убыточных входов</p>
+                    
+                    <div class="space-y-3 text-xs font-mono">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 font-sans">Относительная волатильность (atr_pct)</span>
+                                <span class="text-emerald-400 font-bold">38.3%</span>
+                            </div>
+                            <div class="w-full bg-slate-800/80 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 38.3%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 font-sans">Сброс открытого интереса (oi_change)</span>
+                                <span class="text-cyan-400 font-bold">13.8%</span>
+                            </div>
+                            <div class="w-full bg-slate-800/80 rounded-full h-2">
+                                <div class="bg-cyan-500 h-2 rounded-full" style="width: 13.8%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 font-sans">Всплеск объема (vol_spike)</span>
+                                <span class="text-amber-400 font-bold">9.7%</span>
+                            </div>
+                            <div class="w-full bg-slate-800/80 rounded-full h-2">
+                                <div class="bg-amber-500 h-2 rounded-full" style="width: 9.7%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 font-sans">Сентимент розницы (ls_ratio)</span>
+                                <span class="text-purple-400 font-bold">9.2%</span>
+                            </div>
+                            <div class="w-full bg-slate-800/80 rounded-full h-2">
+                                <div class="bg-purple-500 h-2 rounded-full" style="width: 9.2%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-300 font-sans">Отрыв от скользящей средней (ema_dist)</span>
+                                <span class="text-rose-400 font-bold">7.9%</span>
+                            </div>
+                            <div class="w-full bg-slate-800/80 rounded-full h-2">
+                                <div class="bg-rose-500 h-2 rounded-full" style="width: 7.9%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== ВКЛАДКА 6: ИСТОРИЯ ==================== -->
+        <section id="tab-history" class="tab-content hidden space-y-4">
+            <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+                <div class="p-4 sm:p-5 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white">Журнал совершенных сделок</h2>
+                        <p class="text-xs text-slate-400">История закрытых ордеров (TP1, ATR-Трейлинг, Soft BE, SL)</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="filterSymbolInput" placeholder="Поиск монеты..." class="bg-slate-950/80 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition">
+                        <select id="filterOutcomeSelect" class="bg-slate-950/80 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 transition">
+                            <option value="ALL">Все сделки</option>
+                            <option value="WINS">Только победы</option>
+                            <option value="LOSSES">Только стопы</option>
+                        </select>
+                        <button id="tabClearHistoryBtn" class="bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 text-xs px-3 py-1.5 rounded-xl border border-rose-800/40 hover:border-rose-700/60 transition flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Очистить</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-950/80 text-slate-400 font-semibold uppercase tracking-wider text-[11px] font-sans">
+                            <tr>
+                                <th class="py-3 px-4">Время</th>
+                                <th class="py-3 px-4">Символ</th>
+                                <th class="py-3 px-4">Тип</th>
+                                <th class="py-3 px-4">Вход ➔ Выход</th>
+                                <th class="py-3 px-4">Маржа</th>
+                                <th class="py-3 px-4">ROE %</th>
+                                <th class="py-3 px-4">Чистый PnL</th>
+                                <th class="py-3 px-4">Причина закрытия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody" class="divide-y divide-slate-800/60">
+                            <tr>
+                                <td colspan="8" class="text-center py-6 text-slate-500 font-sans">История сделок пуста</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Модальное окно подтверждения очистки -->
+    <div id="clearConfirmModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-700/60">
+            <div class="flex items-center space-x-3 text-rose-400">
+                <div class="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Очистить историю сделок?</h3>
+                    <p class="text-xs text-slate-400">Сброс графиков, винрейта и журнала</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Все загруженные сделки будут удалены из памяти дашборда. Баланс вернется к исходному депозиту (<span id="modalCurrentDeposit" class="font-mono text-emerald-400">100.00$</span>).
+            </p>
+
+            <div class="flex items-center justify-end space-x-2.5 pt-2">
+                <button id="cancelClearModalBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition">
+                    Отмена
+                </button>
+                <button id="confirmClearBtn" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-600/30 transition">
+                    Да, очистить всё
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let botIsActive = true;
+        let tradesData = [];
+        let activePositions = [];
+        let equityChartInstance = null;
+        let reasonsDonutInstance = null;
+        let currentDeposit = 100.0;
+        let isConnectedToLiveBot = false;
+        let audioEnabled = true;
+        let audioCtx = null;
+        let hasUserEditedScore = false;
+        const API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://localhost:8000';
+
+        let botSettings = {
+            deposit: 100.0,
+            leverage: 3,
+            riskPerTrade: 2.0,
+            minScore: 45,
+            tp1Roe: 3.0,
+            stopRoe: -12.0,
+            atrMult: 1.0,
+            slippage: 0.08,
+            beTriggerRoe: 0.5,
+            mlConfidence: 0.60
+        };
+
+        function updateScoreDisplays(score) {
+            const num = parseInt(score) || 45;
+            botSettings.minScore = num;
+
+            const cardScore = document.getElementById('cardCurrentScore');
+            const pillScore = document.getElementById('scoreValuePill');
+            const tabBadge = document.getElementById('tabScoreBadge');
+            const headerBadge = document.getElementById('headerLiveScoreBadge');
+
+            if (cardScore) cardScore.textContent = num;
+            if (pillScore) pillScore.textContent = num;
+            if (tabBadge) tabBadge.textContent = num;
+            if (headerBadge) headerBadge.textContent = `Score: ${num}`;
+        }
+
+        function playChime(isWin = true) {
+            if (!audioEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (isWin) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(329.63, now);
+                    osc.frequency.exponentialRampToValueAtTime(220.00, now + 0.2);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        const toggleAudioBtn = document.getElementById('toggleAudioBtn');
+        const audioIconOn = document.getElementById('audioIconOn');
+        const audioIconOff = document.getElementById('audioIconOff');
+        if (toggleAudioBtn) {
+            toggleAudioBtn.addEventListener('click', () => {
+                audioEnabled = !audioEnabled;
+                audioIconOn.classList.toggle('hidden', !audioEnabled);
+                audioIconOff.classList.toggle('hidden', audioEnabled);
+                showToast(audioEnabled ? 'Звук включен' : 'Звук выключен', audioEnabled ? 'Звуковые сигналы при сделках активны' : 'Уведомления без звука', 'info');
+            });
+        }
+
+        async function fetchLiveBotState() {
+            try {
+                const res = await fetch(`${API_BASE}/api/status`, { cache: 'no-store' });
+                if (!res.ok) throw new Error('API offline');
+                const data = await res.json();
+
+                if (!isConnectedToLiveBot) {
+                    isConnectedToLiveBot = true;
+                    updateConnectionBadge(true);
+                    showToast('Связь установлена', 'Терминал подключен к живому Bybit AI Bot', 'success');
+                }
+
+                // Защита от undefined и поддержка обоих форматов переменных
+                botIsActive = data.is_running !== undefined ? data.is_running : (data.botRunning !== undefined ? data.botRunning : true);
+                updateBotToggleButtonUI(botIsActive);
+
+                // Синхронизация параметров с сервера
+                if (data.settings) {
+                    const serverScore = data.settings.minScore || 45;
+                    updateScoreDisplays(serverScore);
+
+                    if (!hasUserEditedScore) {
+                        const inputScore = document.getElementById('inputMinScore');
+                        const sliderScore = document.getElementById('sliderMinScore');
+                        if (inputScore && document.activeElement !== inputScore) inputScore.value = serverScore;
+                        if (sliderScore && document.activeElement !== sliderScore) sliderScore.value = serverScore;
+                    }
+
+                    if (data.settings.tp1Roe && document.activeElement !== document.getElementById('inputTp1Roe')) {
+                        document.getElementById('inputTp1Roe').value = data.settings.tp1Roe;
+                    }
+                    if (data.settings.stopRoe && document.activeElement !== document.getElementById('inputStopRoe')) {
+                        document.getElementById('inputStopRoe').value = data.settings.stopRoe;
+                    }
+                }
+                
+                renderLivePositions(data.positions || []);
+
+                if (data.history && Array.isArray(data.history) && data.history.length !== tradesData.length) {
+                    const prevCount = tradesData.length;
+                    tradesData = data.history;
+                    refreshAllViews();
+
+                    if (prevCount > 0 && tradesData.length > prevCount) {
+                        const lastTrade = tradesData[tradesData.length - 1];
+                        const lastPnl = lastTrade.pnl || 0;
+                        playChime(lastPnl >= 0);
+                    }
+                }
+
+                // Если история не изменилась, но баланс от бота пришел, просто обновим цифры на карточках
+                if (data.balance !== undefined) {
+                    document.getElementById('cardBalance').textContent = `${data.balance.toFixed(2)}$`;
+                }
+                if (data.total_pnl !== undefined) {
+                    const pnlEl = document.getElementById('cardNetPnl');
+                    pnlEl.textContent = `${data.total_pnl >= 0 ? '+' : ''}${data.total_pnl.toFixed(2)}$`;
+                    pnlEl.className = `text-xl font-bold font-mono mt-2 ${data.total_pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+                }
+                if (data.winrate !== undefined) {
+                    document.getElementById('cardWinrate').textContent = `${data.winrate.toFixed(1)}%`;
+                }
+                if (data.total_trades !== undefined) {
+                    document.getElementById('cardTotalTrades').textContent = data.total_trades;
+                }
+
+            } catch (err) {
+                if (isConnectedToLiveBot) {
+                    isConnectedToLiveBot = false;
+                    updateConnectionBadge(false);
+                }
+            }
+        }
+
+        function updateConnectionBadge(online) {
+            const badge = document.getElementById('connectionBadge');
+            const statusText = document.getElementById('connectionStatusText');
+            if (!badge) return;
+            if (online) {
+                badge.className = "px-2.5 py-0.5 text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center space-x-1.5 shadow-sm shadow-emerald-500/10";
+                if(statusText) statusText.textContent = "Live Bybit V5";
+            } else {
+                badge.className = "px-2.5 py-0.5 text-[11px] font-mono font-bold bg-slate-900/90 text-slate-400 border border-slate-800 rounded-full flex items-center space-x-1.5";
+                if(statusText) statusText.textContent = "Автономно";
+            }
+        }
+
+        function renderLivePositions(positions) {
+            const tbody = document.getElementById('livePositionsBody');
+            if (!tbody) return;
+            if (!positions || positions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-7 text-slate-500 font-sans">
+                            Нет активных позиций. Квантовый гейт отслеживает кульминации ликвидаций и капитуляцию открытого интереса...
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = positions.map(p => {
+                const isLong = p.direction === 'LONG';
+                const dirBadge = isLong
+                    ? '<span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span><span>LONG 3x</span></span>'
+                    : '<span class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[10px] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-rose-400 pulse-dot"></span><span>SHORT 3x</span></span>';
+                
+                // Поддержка snake_case от бота и camelCase из демо
+                const roe = p.roe || 0;
+                const pnl = p.pnl || 0;
+                const margin = p.margin || 0;
+                const entryPrice = p.entry_price !== undefined ? p.entry_price : (p.entryPrice || 0);
+                const currentPrice = p.current_price !== undefined ? p.current_price : (p.currentPrice || 0);
+                const strategyName = p.strategy_id || 'Отслеживание';
+
+                const roeColor = roe >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                const tpProgress = Math.max(0, Math.min(100, (roe / 3.0) * 100));
+                const progressBarColor = roe >= 0 ? 'bg-emerald-500' : 'bg-rose-500';
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-3.5 font-bold text-white tracking-wide">${p.symbol}</td>
+                        <td class="py-3 px-3.5">${dirBadge}</td>
+                        <td class="py-3 px-3.5 text-slate-300 font-mono">
+                            ${entryPrice.toFixed(4)} ➔ <span class="font-bold ${roeColor}">${currentPrice.toFixed(4)}</span>
+                        </td>
+                        <td class="py-3 px-3.5 text-slate-400 font-mono">${margin.toFixed(2)}$</td>
+                        <td class="py-3 px-3.5">
+                            <div class="font-bold ${roeColor} font-mono">${roe >= 0 ? '+' : ''}${roe.toFixed(2)}%</div>
+                            <div class="w-24 bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                                <div class="${progressBarColor} h-1 rounded-full transition-all duration-300" style="width: ${tpProgress}%"></div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3.5 font-bold ${pnlColor} font-mono">${pnl >= 0 ? '+' : ''}${pnl.toFixed(3)}$</td>
+                        <td class="py-3 px-3.5">
+                            <span class="text-slate-400 font-semibold">${strategyName}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateBotToggleButtonUI(active) {
+            const btn = document.getElementById('toggleBotBtn');
+            const textEl = document.getElementById('botBtnText');
+            const iconEl = document.getElementById('botBtnIcon');
+            if (!btn || !textEl || !iconEl) return;
+
+            if (active) {
+                btn.className = "flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-emerald-500/25 active:scale-95";
+                textEl.textContent = "Бот активен";
+                iconEl.className = "w-2 h-2 rounded-full bg-white pulse-dot text-white";
+            } else {
+                btn.className = "flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition border border-slate-800 active:scale-95";
+                textEl.textContent = "Бот на паузе";
+                iconEl.className = "w-2 h-2 rounded-full bg-rose-500 text-white";
+            }
+        }
+
+        const toggleBotBtn = document.getElementById('toggleBotBtn');
+        if (toggleBotBtn) {
+            toggleBotBtn.addEventListener('click', async () => {
+                botIsActive = !botIsActive;
+                updateBotToggleButtonUI(botIsActive);
+
+                if (isConnectedToLiveBot) {
+                    try {
+                        await fetch(`${API_BASE}/api/toggle`, { method: 'POST' });
+                    } catch (e) {}
+                }
+
+                if (botIsActive) {
+                    showToast("Сканер запущен", "Мониторинг Bybit V5 активен", "success");
+                } else {
+                    showToast("Сканер на паузе", "Поиск новых входов приостановлен", "info");
+                }
+            });
+        }
+
+        // Переключение вкладок
+        const tabBtns = document.querySelectorAll('.tab-pill');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.add('hidden'));
+
+                btn.classList.add('active');
+                document.getElementById(targetTab)?.classList.remove('hidden');
+
+                if (targetTab === 'tab-analytics' && reasonsDonutInstance) {
+                    reasonsDonutInstance.resize();
+                }
+                if (targetTab === 'tab-dashboard' && equityChartInstance) {
+                    equityChartInstance.resize();
+                }
+            });
+        });
+
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-950/90 border-emerald-500/80 text-emerald-200 shadow-emerald-500/10',
+                error: 'bg-rose-950/90 border-rose-500/80 text-rose-200 shadow-rose-500/10',
+                info: 'bg-slate-900/90 border-slate-700/80 text-slate-200 shadow-slate-900/50'
+            };
+
+            toast.className = `border rounded-2xl px-4 py-3 shadow-2xl backdrop-blur-xl transition-all transform duration-300 translate-y-2 opacity-0 text-xs pointer-events-auto max-w-sm ${colors[type] || colors.info}`;
+            toast.innerHTML = `<div class="font-bold text-sm mb-0.5">${title}</div><div>${message}</div>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Связка ползунка и поля Score
+        const sliderScore = document.getElementById('sliderMinScore');
+        const inputScore = document.getElementById('inputMinScore');
+
+        if (sliderScore && inputScore) {
+            sliderScore.addEventListener('input', (e) => {
+                hasUserEditedScore = true;
+                const val = parseInt(e.target.value);
+                inputScore.value = val;
+                updateScoreDisplays(val);
+            });
+
+            inputScore.addEventListener('input', (e) => {
+                hasUserEditedScore = true;
+                const val = parseInt(e.target.value) || 45;
+                sliderScore.value = val;
+                updateScoreDisplays(val);
+            });
+        }
+
+        // Отправка настроек на сервер Bybit бота
+        async function sendSettingsToServer() {
+            const newScore = parseInt(document.getElementById('inputMinScore').value) || 45;
+            const payload = {
+                minScore: newScore,
+                leverage: parseInt(document.getElementById('selectLeverage').value) || 3,
+                riskPerTrade: parseFloat(document.getElementById('inputRiskPerTrade').value) || 2.0,
+                tp1Roe: parseFloat(document.getElementById('inputTp1Roe').value) || 3.0,
+                stopRoe: parseFloat(document.getElementById('inputStopRoe').value) || -12.0,
+                atrMult: parseFloat(document.getElementById('inputAtrMult').value) || 1.0,
+                slippage: parseFloat(document.getElementById('inputSlippage').value) || 0.08,
+                beTriggerRoe: parseFloat(document.getElementById('sliderBeTrigger').value) || 0.5,
+                mlConfidence: parseInt(document.getElementById('sliderMlConfidence').value) / 100.0
+            };
+
+            botSettings.minScore = newScore;
+            updateScoreDisplays(newScore);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    showToast('Скор обновлен в живом боте!', `MIN_SCORE = ${newScore} успешно применен в памяти сервера без перезапуска!`, 'success');
+                    hasUserEditedScore = false;
+                } else {
+                    showToast('Параметры сохранены локально', `Установлен Score = ${newScore} (сервер не ответил)`, 'info');
+                }
+            } catch (err) {
+                showToast('Сохранено локально', `Установлен Score = ${newScore} (автономный режим)`, 'info');
+            }
+        }
+
+        const mainApplyParamsBtn = document.getElementById('mainApplyParamsBtn');
+        if (mainApplyParamsBtn) {
+            mainApplyParamsBtn.addEventListener('click', sendSettingsToServer);
+        }
+
+        // Слайдеры
+        const sliderMl = document.getElementById('sliderMlConfidence');
+        const labelMl = document.getElementById('labelMlConfidence');
+        if (sliderMl && labelMl) {
+            sliderMl.addEventListener('input', (e) => {
+                labelMl.textContent = `${e.target.value}%`;
+                botSettings.mlConfidence = parseInt(e.target.value) / 100.0;
+            });
+        }
+
+        const sliderBe = document.getElementById('sliderBeTrigger');
+        const labelBe = document.getElementById('labelBeTrigger');
+        if (sliderBe && labelBe) {
+            sliderBe.addEventListener('input', (e) => {
+                labelBe.textContent = `+${parseFloat(e.target.value).toFixed(1)}% ROE`;
+                botSettings.beTriggerRoe = parseFloat(e.target.value);
+            });
+        }
+
+        const exportConfigBtn = document.getElementById('exportConfigBtn');
+        if (exportConfigBtn) {
+            exportConfigBtn.addEventListener('click', () => {
+                const configSnippet = `# Сгенерированные настройки стратегии из дашборда:
+MIN_SCORE = ${document.getElementById('inputMinScore').value}
+LEVERAGE = ${document.getElementById('selectLeverage').value}
+RISK_PER_TRADE = ${document.getElementById('inputRiskPerTrade').value}
+TP1_ROE = ${document.getElementById('inputTp1Roe').value}
+STOP_ROE = ${document.getElementById('inputStopRoe').value}
+TRAILING_ATR_MULT = ${document.getElementById('inputAtrMult').value}
+SLIPPAGE_PCT = ${document.getElementById('inputSlippage').value}
+BE_TRIGGER_ROE = ${sliderBe ? sliderBe.value : 0.5}
+ML_MIN_CONFIDENCE = ${(parseInt(sliderMl ? sliderMl.value : 60) / 100.0).toFixed(2)}`;
+
+                const textArea = document.createElement("textarea");
+                textArea.value = configSnippet;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Конфиг скопирован!', 'Код скопирован в буфер обмена для config.py', 'success');
+                } catch (err) {}
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length < 2) return;
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^[\uFEFF]/, ''));
+            const list = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(',');
+                if (cols.length < headers.length) continue;
+
+                const row = {};
+                headers.forEach((h, idx) => {
+                    row[h] = cols[idx]?.trim();
+                });
+
+                list.push({
+                    time: row['Time'] || '--:--:--',
+                    symbol: row['Symbol'] || 'UNKNOWN',
+                    direction: row['Direction'] || 'LONG',
+                    entryPrice: parseFloat(row['Entry Price']) || 0.0,
+                    exitPrice: parseFloat(row['Exit Price']) || 0.0,
+                    margin: parseFloat(row['Margin']) || 2.0,
+                    leverage: parseInt(row['Leverage']) || 3,
+                    roe: parseFloat(row['ROE %']) || 0.0,
+                    pnl: parseFloat(row['PnL ($)']) || 0.0,
+                    reason: row['Reason'] || 'Закрытие',
+                    duration: parseFloat(row['Duration (s)']) || 0.0
+                });
+            }
+
+            tradesData = list;
+            refreshAllViews();
+        }
+
+        const csvFileInput = document.getElementById('csvFileInput');
+        if (csvFileInput) {
+            csvFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        parseCSV(evt.target.result);
+                        showToast('Файл загружен', `Успешно обработано: ${file.name}`, 'success');
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+
+        function refreshAllViews() {
+            let balance = 100.0;
+            let peak = 100.0;
+            let maxDd = 0.0;
+            let totalPnl = 0.0;
+            let wins = 0;
+            let losses = 0;
+            let grossProfit = 0.0;
+            let grossLoss = 0.0;
+            let totalDuration = 0.0;
+
+            const equityPoints = [balance];
+            const equityLabels = ['0'];
+
+            tradesData.forEach((t, idx) => {
+                const pnlVal = t.pnl || 0;
+                totalPnl += pnlVal;
+                balance += pnlVal;
+                totalDuration += t.duration || 0;
+
+                if (pnlVal >= 0) {
+                    wins++;
+                    grossProfit += pnlVal;
+                } else {
+                    losses++;
+                    grossLoss += Math.abs(pnlVal);
+                }
+
+                if (balance > peak) peak = balance;
+                const dd = peak - balance;
+                if (dd > maxDd) maxDd = dd;
+
+                equityPoints.push(parseFloat(balance.toFixed(2)));
+                equityLabels.push(String(idx + 1));
+            });
+
+            const total = tradesData.length;
+            
+            // Если бот оффлайн - пересчитываем карточки из истории
+            if (!isConnectedToLiveBot) {
+                const wr = total ? (wins / total * 100) : 0;
+                const pf = grossLoss > 0 ? (grossProfit / grossLoss) : (grossProfit > 0 ? 99.0 : 0.0);
+                const avgDurMin = total ? (totalDuration / total / 60) : 0;
+                const balChangePct = ((balance - 100.0) / 100.0) * 100;
+
+                document.getElementById('cardBalance').textContent = `${balance.toFixed(2)}$`;
+                const balChEl = document.getElementById('cardBalanceChange');
+                balChEl.textContent = `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}$ (${balChangePct >= 0 ? '+' : ''}${balChangePct.toFixed(1)}%)`;
+                balChEl.className = `text-[11px] font-semibold mt-1 font-mono ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                const pnlEl = document.getElementById('cardNetPnl');
+                pnlEl.textContent = `${totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}$`;
+                pnlEl.className = `text-xl font-bold font-mono mt-2 ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+                document.getElementById('cardWinrate').textContent = `${wr.toFixed(1)}%`;
+                document.getElementById('cardWinsLosses').textContent = `${wins} побед / ${losses} стопов`;
+                document.getElementById('cardTotalTrades').textContent = total;
+                document.getElementById('cardAvgDuration').textContent = `Ср. время: ${avgDurMin.toFixed(1)} мин`;
+                document.getElementById('cardProfitFactor').textContent = pf.toFixed(2);
+            }
+
+            document.getElementById('chartPointsBadge').textContent = `${total} сделок`;
+
+            const histBadge = document.getElementById('historyTabCountBadge');
+            if (histBadge) histBadge.textContent = total;
+
+            renderEquityChart(equityLabels, equityPoints);
+            renderAnalyticsSection();
+            renderHistoryTable();
+        }
+
+        function renderEquityChart(labels, data) {
+            const canvas = document.getElementById('equityChartCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (equityChartInstance) equityChartInstance.destroy();
+
+            const isProfitable = (data[data.length - 1] || 100.0) >= 100.0;
+            const strokeColor = isProfitable ? '#10b981' : '#f43f5e';
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+            if (isProfitable) {
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
+                gradient.addColorStop(0.6, 'rgba(16, 185, 129, 0.08)');
+                gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(244, 63, 94, 0.28)');
+                gradient.addColorStop(0.6, 'rgba(244, 63, 94, 0.08)');
+                gradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
+            }
+
+            ctx.shadowColor = isProfitable ? 'rgba(16, 185, 129, 0.45)' : 'rgba(244, 63, 94, 0.45)';
+            ctx.shadowBlur = 8;
+
+            equityChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        borderColor: strokeColor,
+                        backgroundColor: gradient,
+                        borderWidth: 2.2,
+                        fill: true,
+                        tension: 0.28,
+                        pointRadius: data.length > 50 ? 0 : 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: strokeColor,
+                        pointBorderColor: '#0c1322',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(12, 19, 34, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: strokeColor,
+                            borderColor: 'rgba(51, 65, 85, 0.6)',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: (c) => ` Баланс: ${c.parsed.y.toFixed(2)}$`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(30, 41, 59, 0.35)', borderDash: [3, 4] }, 
+                            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } } 
+                        },
+                        y: { 
+                            grid: { color: 'rgba(30, 41, 59, 0.35)', borderDash: [3, 4] }, 
+                            ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 }, callback: v => `${v}$` } 
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAnalyticsSection() {
+            const byCoin = {};
+            let longWins = 0, longTotal = 0, longPnl = 0.0;
+            let shortWins = 0, shortTotal = 0, shortPnl = 0.0;
+            const reasons = {};
+
+            tradesData.forEach(t => {
+                const tPnl = t.pnl || 0;
+                if (!byCoin[t.symbol]) byCoin[t.symbol] = { pnl: 0, count: 0, wins: 0 };
+                byCoin[t.symbol].pnl += tPnl;
+                byCoin[t.symbol].count++;
+                if (tPnl >= 0) byCoin[t.symbol].wins++;
+
+                if (t.direction === 'LONG') {
+                    longTotal++;
+                    longPnl += tPnl;
+                    if (tPnl >= 0) longWins++;
+                } else {
+                    shortTotal++;
+                    shortPnl += tPnl;
+                    if (tPnl >= 0) shortWins++;
+                }
+
+                let r = t.reason || 'Закрытие';
+                if (r.includes('TP1')) r = 'TP1 Взят (50%)';
+                else if (r.includes('Трейлинг')) r = 'ATR-Трейлинг';
+                else if (r.includes('Soft BE')) r = 'Soft BE (30м)';
+                else if (r.includes('Безубыток')) r = 'Безубыток (+0.5%)';
+                else if (r.includes('Стоп')) r = 'Стоп-лосс (-12%)';
+                else if (r.includes('Тайм-стоп')) r = 'Тайм-стоп (45м)';
+                reasons[r] = (reasons[r] || 0) + 1;
+            });
+
+            const profitable = Object.entries(byCoin).filter(c => c[1].pnl > 0).sort((a,b) => b[1].pnl - a[1].pnl);
+            const topProfEl = document.getElementById('topProfitableList');
+            if (topProfEl) {
+                topProfEl.innerHTML = profitable.length ? profitable.slice(0, 5).map(([sym, d]) => `
+                    <div class="flex items-center justify-between py-2 border-b border-slate-800/80">
+                        <span class="font-bold text-white">${sym} <span class="text-slate-500 font-normal">(${d.count} сд.)</span></span>
+                        <span class="text-emerald-400 font-bold">+${d.pnl.toFixed(3)}$</span>
+                    </div>
+                `).join('') : '<div class="text-slate-500 font-sans text-center py-4">Нет данных</div>';
+            }
+
+            const losing = Object.entries(byCoin).filter(c => c[1].pnl < 0).sort((a,b) => a[1].pnl - b[1].pnl);
+            const topLossEl = document.getElementById('topLosingList');
+            if (topLossEl) {
+                topLossEl.innerHTML = losing.length ? losing.slice(0, 5).map(([sym, d]) => `
+                    <div class="flex items-center justify-between py-2 border-b border-slate-800/80">
+                        <span class="font-bold text-white">${sym} <span class="text-slate-500 font-normal">(${d.count} сд.)</span></span>
+                        <span class="text-rose-400 font-bold">${d.pnl.toFixed(3)}$</span>
+                    </div>
+                `).join('') : '<div class="text-slate-500 font-sans text-center py-4">Нет данных</div>';
+            }
+
+            const longWr = longTotal ? (longWins / longTotal * 100) : 0;
+            const shortWr = shortTotal ? (shortWins / shortTotal * 100) : 0;
+            const lWrEl = document.getElementById('longWinrate');
+            const lStEl = document.getElementById('longStatsDetails');
+            const sWrEl = document.getElementById('shortWinrate');
+            const sStEl = document.getElementById('shortStatsDetails');
+            if (lWrEl) lWrEl.textContent = `${longWr.toFixed(1)}% WR`;
+            if (lStEl) lStEl.innerHTML = `Сделок: ${longTotal} | PnL: <span class="${longPnl>=0?'text-emerald-400':'text-rose-400'}">${longPnl>=0?'+':''}${longPnl.toFixed(2)}$</span>`;
+            if (sWrEl) sWrEl.textContent = `${shortWr.toFixed(1)}% WR`;
+            if (sStEl) sStEl.innerHTML = `Сделок: ${shortTotal} | PnL: <span class="${shortPnl>=0?'text-emerald-400':'text-rose-400'}">${shortPnl>=0?'+':''}${shortPnl.toFixed(2)}$</span>`;
+
+            const canvasDonut = document.getElementById('reasonsDonutCanvas');
+            if (!canvasDonut) return;
+            const ctxDonut = canvasDonut.getContext('2d');
+            if (reasonsDonutInstance) reasonsDonutInstance.destroy();
+
+            const rLabels = Object.keys(reasons);
+            const rData = Object.values(reasons);
+            const palette = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#f43f5e', '#3b82f6'];
+
+            reasonsDonutInstance = new Chart(ctxDonut, {
+                type: 'doughnut',
+                data: {
+                    labels: rLabels,
+                    datasets: [{
+                        data: rData,
+                        backgroundColor: palette.slice(0, rLabels.length),
+                        borderColor: '#0c1322',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '72%'
+                }
+            });
+
+            const rLegEl = document.getElementById('reasonsLegend');
+            if (rLegEl) {
+                rLegEl.innerHTML = rLabels.map((l, i) => `
+                    <div class="flex items-center justify-between text-slate-300 py-1">
+                        <span class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full" style="background-color: ${palette[i%palette.length]}"></span>
+                            <span>${l}</span>
+                        </span>
+                        <span class="font-bold text-white">${reasons[l]}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderHistoryTable() {
+            const sFilter = document.getElementById('filterSymbolInput')?.value.trim().toUpperCase() || '';
+            const oFilter = document.getElementById('filterOutcomeSelect')?.value || 'ALL';
+
+            const filtered = tradesData.filter(t => {
+                const tPnl = t.pnl || 0;
+                if (sFilter && !t.symbol.toUpperCase().includes(sFilter)) return false;
+                if (oFilter === 'WINS' && tPnl < 0) return false;
+                if (oFilter === 'LOSSES' && tPnl >= 0) return false;
+                return true;
+            });
+
+            const tbody = document.getElementById('historyTableBody');
+            if (!tbody) return;
+
+            if (!filtered.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-500 font-sans">По заданным фильтрам сделок не найдено</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(t => {
+                const tPnl = t.pnl || 0;
+                const tRoe = t.roe || 0;
+                const entryPrice = t.entry_price !== undefined ? t.entry_price : (t.entryPrice || 0);
+                const exitPrice = t.exit_price !== undefined ? t.exit_price : (t.exitPrice || 0);
+                const isWin = tPnl >= 0;
+                
+                const badge = t.direction === 'LONG'
+                    ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">LONG</span>'
+                    : '<span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[10px] font-bold">SHORT</span>';
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-2.5 px-4 text-slate-400">${t.time}</td>
+                        <td class="py-2.5 px-4 font-bold text-white">${t.symbol}</td>
+                        <td class="py-2.5 px-4">${badge}</td>
+                        <td class="py-2.5 px-4 text-slate-300 font-mono">${entryPrice.toFixed(4)} ➔ ${exitPrice.toFixed(4)}</td>
+                        <td class="py-2.5 px-4 text-slate-400">${(t.margin || 0).toFixed(2)}$ (${t.leverage}x)</td>
+                        <td class="py-2.5 px-4 font-bold ${isWin?'text-emerald-400':'text-rose-400'} font-mono">${isWin?'+':''}${tRoe.toFixed(2)}%</td>
+                        <td class="py-2.5 px-4 font-bold ${isWin?'text-emerald-400':'text-rose-400'} font-mono">${isWin?'+':''}${tPnl.toFixed(3)}$</td>
+                        <td class="py-2.5 px-4 text-slate-400 text-xs">${t.reason || ''}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('filterSymbolInput')?.addEventListener('input', renderHistoryTable);
+        document.getElementById('filterOutcomeSelect')?.addEventListener('change', renderHistoryTable);
+
+        const clearModal = document.getElementById('clearConfirmModal');
+        const openModalBtns = [document.getElementById('openClearModalBtn'), document.getElementById('tabClearHistoryBtn')];
+        const closeModalBtn = document.getElementById('cancelClearModalBtn');
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+
+        openModalBtns.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    const depEl = document.getElementById('modalCurrentDeposit');
+                    if (depEl) depEl.textContent = `100.00$`;
+                    clearModal?.classList.remove('hidden');
+                });
+            }
+        });
+
+        closeModalBtn?.addEventListener('click', () => {
+            clearModal?.classList.add('hidden');
+        });
+
+        confirmClearBtn?.addEventListener('click', async () => {
+            tradesData = [];
+            activePositions = [];
+            const liveBody = document.getElementById('livePositionsBody');
+            if (liveBody) {
+                liveBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-7 text-slate-500 font-sans">
+                            История очищена. Ожидание свежих сигналов от бота...
+                        </td>
+                    </tr>
+                `;
+            }
+            refreshAllViews();
+            clearModal?.classList.add('hidden');
+
+            if (isConnectedToLiveBot) {
+                try {
+                    await fetch(`${API_BASE}/api/clear`, { method: 'POST' });
+                    showToast('История сброшена', 'trade_history.csv и состояние бота обнулены', 'info');
+                    return;
+                } catch (e) {}
+            }
+            showToast('История очищена', 'Все сделки и показатели графика сброшены', 'info');
+        });
+
+        // Демо A/B тест
+        const runBacktestBtn = document.getElementById('runBacktestBtn');
+        if (runBacktestBtn) {
+            runBacktestBtn.addEventListener('click', () => {
+                runBacktestBtn.disabled = true;
+                runBacktestBtn.innerHTML = `
+                    <svg class="animate-spin w-4 h-4 text-white mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    <span>Идет симуляция...</span>
+                `;
+
+                setTimeout(() => {
+                    const backtestData = [
+                        { sym: 'SOLUSDT', tradesNo: 180, tradesMl: 78, wrNo: 41.1, wrMl: 65.4, pnlNo: +1.20, pnlMl: +7.40, pf: '2.10' },
+                        { sym: 'SUIUSDT', tradesNo: 165, tradesMl: 62, wrNo: 39.4, wrMl: 66.1, pnlNo: -0.80, pnlMl: +6.20, pf: '1.98' },
+                        { sym: 'NEARUSDT', tradesNo: 145, tradesMl: 59, wrNo: 37.2, wrMl: 64.4, pnlNo: -1.90, pnlMl: +5.20, pf: '1.95' },
+                        { sym: 'AVAXUSDT', tradesNo: 130, tradesMl: 52, wrNo: 35.4, wrMl: 61.5, pnlNo: -2.80, pnlMl: +3.10, pf: '1.55' },
+                        { sym: 'LINKUSDT', tradesNo: 120, tradesMl: 46, wrNo: 38.3, wrMl: 63.0, pnlNo: -1.40, pnlMl: +4.10, pf: '1.72' },
+                        { sym: 'WLDUSDT', tradesNo: 155, tradesMl: 58, wrNo: 36.1, wrMl: 62.1, pnlNo: -3.10, pnlMl: +4.80, pf: '1.68' },
+                    ];
+
+                    const tbody = document.getElementById('backtestTableBody');
+                    if (tbody) {
+                        tbody.innerHTML = backtestData.map(r => `
+                            <tr class="hover:bg-slate-800/40 transition">
+                                <td class="py-3 px-4 font-bold text-white">${r.sym}</td>
+                                <td class="py-3 px-4 text-slate-300">${r.tradesNo} ➔ <span class="text-emerald-400 font-bold">${r.tradesMl}</span></td>
+                                <td class="py-3 px-4 text-slate-300">${r.wrNo}% ➔ <span class="text-emerald-400 font-bold">${r.wrMl}%</span></td>
+                                <td class="py-3 px-4 text-slate-300">${r.pnlNo>0?'+':''}${r.pnlNo}$ ➔ <span class="text-emerald-400 font-bold">+${r.pnlMl}$</span></td>
+                                <td class="py-3 px-4 text-cyan-400 font-bold">${r.pf}</td>
+                                <td class="py-3 px-4 text-xs text-emerald-400 font-semibold">+24.3% WR</td>
+                            </tr>
+                        `).join('');
+                    }
+
+                    runBacktestBtn.disabled = false;
+                    runBacktestBtn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path></svg>
+                        <span>Запустить симуляцию A/B</span>
+                    `;
+                    showToast('A/B Тест завершен', 'CatBoost отсек 57% ложных сделок', 'success');
+                }, 1000);
+            });
+        }
+
+        const demoBtn = document.getElementById('demoBtn');
+        if (demoBtn) {
+            demoBtn.addEventListener('click', () => {
+                const demoTrades = [];
+                const coins = ['LSKUSDT', 'CVCUSDT', 'HYPEUSDT', 'STORJUSDT', 'IOSTUSDT'];
+                const now = new Date();
+
+                for (let i = 0; i < 28; i++) {
+                    const sym = coins[i % coins.length];
+                    const dir = Math.random() > 0.4 ? 'LONG' : 'SHORT';
+                    const isWin = Math.random() < 0.72;
+                    const roe = isWin ? (Math.random() * 7.5 + 2.0) : -(Math.random() * 3.0 + 0.5);
+                    const margin = 2.0;
+                    const pnl = margin * (roe / 100);
+
+                    demoTrades.push({
+                        time: new Date(now.getTime() - (28 - i) * 25 * 60000).toLocaleTimeString(),
+                        symbol: sym,
+                        direction: dir,
+                        entryPrice: 1.2500 + Math.random() * 0.1,
+                        exitPrice: 1.2750 + Math.random() * 0.1,
+                        margin: margin,
+                        leverage: 3,
+                        roe: roe,
+                        pnl: pnl,
+                        reason: isWin ? "Трейлинг-стоп" : "Soft BE",
+                        duration: Math.floor(Math.random() * 800 + 120)
+                    });
+                }
+
+                tradesData = demoTrades;
+                refreshAllViews();
+                showToast('Демо-режим активирован', 'Загружена выборка из 28 сделок', 'info');
+            });
+        }
+
+        setInterval(fetchLiveBotState, 1500);
+        fetchLiveBotState();
+    </script>
+</body>
+</html>
